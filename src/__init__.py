@@ -1,0 +1,1 @@
+"""Claude Notify - 基于 Claude hooks 的通知系统"""

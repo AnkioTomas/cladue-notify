@@ -1,0 +1,7 @@
+{
+  "session_id": "test-session-001",
+  "cwd": "/Users/ankio/Documents/SourceCode/Python/cladue-notify",
+  "hook_event_name": "SessionStart",
+  "source": "startup",
+  "model": "claude-sonnet-4-6"
+}

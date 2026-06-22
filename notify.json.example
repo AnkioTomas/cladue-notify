@@ -1,0 +1,4 @@
+{
+  "webhook": "https://your-notify-server.example/claude?type=feishu&authorization=YOUR_TOKEN",
+  "timeout": 10
+}
