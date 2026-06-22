@@ -47,7 +47,7 @@ cp notify.json.example notify.json
 
 ```json
 {
-  "webhook": "https://your-notify-server.example/claude?type=feishu&authorization=YOUR_TOKEN",
+  "webhook": "https://open.feishu.cn/open-apis/bot/v2/hook/XXX",
   "timeout": 10
 }
 ```
@@ -56,6 +56,8 @@ cp notify.json.example notify.json
 |------|------|------|
 | `webhook` | 飞书 webhook 地址 | 必填 |
 | `timeout` | HTTP 超时（秒） | 10 |
+
+**注意**：直接填飞书机器人提供的 webhook 地址即可，无需中转服务。
 
 ### 2. 安装 Hooks
 
@@ -131,27 +133,11 @@ cladue-notify/
 
 ## 飞书 webhook 配置
 
-你需要一个中转服务来接收 Claude Code 的通知并转发到飞书。示例实现：
+1. 在飞书群聊中添加**自定义机器人**
+2. 复制机器人提供的 webhook 地址
+3. 粘贴到 `notify.json` 的 `webhook` 字段
 
-```python
-# 伪代码示例
-from fastapi import FastAPI, Request
-import requests
-
-app = FastAPI()
-
-@app.post("/claude")
-async def receive_claude_notification(request: Request):
-    data = await request.json()
-    # 验证 authorization token
-    
-    # 转发到飞书 webhook
-    feishu_webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/XXX"
-    requests.post(feishu_webhook, json={
-        "msg_type": "text",
-        "content": {"text": data["message"]}
-    })
-```
+飞书机器人文档：[飞书机器人文档](https://open.feishu.cn/document/server-docs/chat-robot/overview)
 
 ## 故障排查
 
