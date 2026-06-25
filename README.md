@@ -1,10 +1,10 @@
-# Claude Code 飞书通知
+# Claude Code / Cursor 飞书通知
 
-将 Claude Code 的 Hook 事件推送到飞书（Lark/Feishu）。
+将 Claude Code 和 Cursor 的 Hook 事件推送到飞书（Lark/Feishu）。
 
 ## 简介
 
-当你在使用 Claude Code 时，这个系统会在关键事件发生时（如需要批准、会话结束、出错等）向飞书发送通知。
+当你在使用 Claude Code 或 Cursor 时，这个系统会在关键事件发生时（如需要批准、会话结束、出错等）向飞书发送通知。两者的 hook 输入都带 `hook_event_name` 字段，因此共用同一套入口和发送逻辑，只是事件名和上下文字段不同。
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -31,7 +31,7 @@
 
 - macOS / Linux
 - Python 3.10+（仅标准库）
-- [Claude Code CLI](https://code.claude.com/docs/en/setup)
+- [Claude Code CLI](https://code.claude.com/docs/en/setup) 或 [Cursor](https://cursor.com)（任一即可）
 
 ## 快速开始
 
@@ -61,13 +61,21 @@ cp notify.json.example notify.json
 
 ### 2. 安装 Hooks
 
+Claude Code：
+
 ```bash
 python3 scripts/install_hooks.py
 ```
 
-这会将 14 个事件的 hook 写入 `~/.claude/settings.json`（异步执行，不阻塞）。
+这会将 14 个事件的 hook 写入 `~/.claude/settings.json`（异步执行，不阻塞）。安装后重启 Claude Code 或新开 session。
 
-安装后重启 Claude Code 或新开 session。
+Cursor：
+
+```bash
+python3 scripts/install_cursor_hooks.py
+```
+
+这会将 5 个观察型事件的 hook 写入 `~/.cursor/hooks.json`（幂等，保留你已有的其它 hook）。Cursor 会自动热加载该文件，无需重启。
 
 ### 3. 验证
 
@@ -113,6 +121,20 @@ echo '{"hook_event_name":"Stop","cwd":"/tmp","session_id":"abc"}' | python3 main
 
 如需启用，编辑 `scripts/install_hooks.py` 中的 `NOTIFY_HOOK_EVENTS` 列表。
 
+### Cursor 事件
+
+默认注册的 5 个观察型事件（不阻塞 agent loop）：
+
+| 事件 | 触发场景 | 说明 |
+|------|----------|------|
+| `stop` | agent 本轮结束 | 完成/中止/出错 |
+| `sessionStart` | 会话开始 | 含 composer 模式 |
+| `sessionEnd` | 会话结束 | 含结束原因 |
+| `subagentStop` | 子代理完成 | 含状态与摘要 |
+| `preCompact` | 上下文压缩前 | 含上下文占用 |
+
+高频或需要返回决策的事件（如 `beforeShellExecution`、`preToolUse`、`afterFileEdit`）默认不注册——本工具只做通知，不参与权限决策。如需增减，编辑 `scripts/install_cursor_hooks.py` 中的 `NOTIFY_HOOK_EVENTS` 列表。
+
 ## 项目结构
 
 ```
@@ -122,7 +144,8 @@ cladue-notify/
 ├── main.py                  # 主入口：事件读取、格式化、发送
 ├── notify_hook.sh           # Hook 入口脚本（bash）
 ├── scripts/
-│   └── install_hooks.py     # 安装 Claude Code hooks
+│   ├── install_hooks.py        # 安装 Claude Code hooks
+│   └── install_cursor_hooks.py # 安装 Cursor hooks
 ├── src/
 │   ├── __init__.py
 │   ├── config.py            # 配置加载
@@ -164,4 +187,5 @@ python3 scripts/install_hooks.py
 ## 参考
 
 - [Claude Code Hooks](https://code.claude.com/docs/en/hooks)
+- [Cursor Hooks](https://cursor.com/docs/hooks)
 - [飞书机器人文档](https://open.feishu.cn/document/server-docs/chat-robot/overview)

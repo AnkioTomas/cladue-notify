@@ -88,12 +88,13 @@ def _tool_line(event_data: dict) -> str | None:
 
 
 def _append_context(body_lines: list[str], event_data: dict) -> None:
-    cwd = event_data.get("cwd", "")
-    session_id = event_data.get("session_id", "")
+    roots = event_data.get("workspace_roots") or []
+    cwd = event_data.get("cwd") or (roots[0] if roots else "")
+    sid = event_data.get("session_id") or event_data.get("conversation_id") or ""
     if cwd:
         body_lines.append(f"项目: {cwd}")
-    if session_id:
-        body_lines.append(f"会话: {session_id[:8]}")
+    if sid:
+        body_lines.append(f"会话: {sid[:8]}")
 
 
 def _fmt_notification(event_data: dict) -> tuple[str, list[str]]:
@@ -260,6 +261,67 @@ def _fmt_pre_tool_use(event_data: dict) -> tuple[str, list[str]]:
     return "Claude Code 工具调用", body_lines
 
 
+CURSOR_STATUS_LABELS = {
+    "completed": "已完成",
+    "aborted": "已中止",
+    "error": "出错",
+}
+
+CURSOR_SESSION_END_LABELS = {
+    "completed": "正常完成",
+    "aborted": "已中止",
+    "error": "出错",
+    "window_close": "窗口关闭",
+    "user_close": "用户关闭",
+}
+
+
+def _fmt_cursor_stop(event_data: dict) -> tuple[str, list[str]]:
+    status = event_data.get("status", "completed")
+    label = CURSOR_STATUS_LABELS.get(status, status)
+    return "Cursor 本轮结束", [f"状态: {label}"]
+
+
+def _fmt_cursor_session_start(event_data: dict) -> tuple[str, list[str]]:
+    body_lines = []
+    mode = event_data.get("composer_mode")
+    if mode:
+        body_lines.append(f"模式: {mode}")
+    if event_data.get("is_background_agent"):
+        body_lines.append("后台代理会话")
+    return "Cursor 会话开始", body_lines or ["新会话已创建。"]
+
+
+def _fmt_cursor_session_end(event_data: dict) -> tuple[str, list[str]]:
+    reason = event_data.get("reason", "completed")
+    label = CURSOR_SESSION_END_LABELS.get(reason, reason)
+    body_lines = [f"原因: {label}"]
+    error = event_data.get("error_message")
+    if error:
+        body_lines.append(f"错误: {_truncate(error)}")
+    return "Cursor 会话结束", body_lines
+
+
+def _fmt_cursor_subagent_stop(event_data: dict) -> tuple[str, list[str]]:
+    subagent_type = event_data.get("subagent_type", "unknown")
+    status = event_data.get("status", "completed")
+    label = CURSOR_STATUS_LABELS.get(status, status)
+    body_lines = [f"类型: {subagent_type}", f"状态: {label}"]
+    summary = _truncate(event_data.get("summary"))
+    if summary:
+        body_lines.append(f"摘要: {summary}")
+    return "Cursor 子代理完成", body_lines
+
+
+def _fmt_cursor_pre_compact(event_data: dict) -> tuple[str, list[str]]:
+    trigger = "自动" if event_data.get("trigger", "auto") == "auto" else "手动"
+    body_lines = [f"触发: {trigger}"]
+    pct = event_data.get("context_usage_percent")
+    if pct is not None:
+        body_lines.append(f"上下文占用: {pct}%")
+    return "Cursor 上下文压缩", body_lines
+
+
 def _fmt_generic(event_data: dict) -> tuple[str, list[str]]:
     event_name = event_data.get("hook_event_name", "unknown")
     body_lines = ["收到 Claude Code hook 事件。"]
@@ -288,6 +350,11 @@ EVENT_FORMATTERS: dict[str, EventFormatter] = {
     "UserPromptSubmit": _fmt_user_prompt_submit,
     "PostToolUse": _fmt_post_tool_use,
     "PreToolUse": _fmt_pre_tool_use,
+    "stop": _fmt_cursor_stop,
+    "sessionStart": _fmt_cursor_session_start,
+    "sessionEnd": _fmt_cursor_session_end,
+    "subagentStop": _fmt_cursor_subagent_stop,
+    "preCompact": _fmt_cursor_pre_compact,
 }
 
 SUPPORTED_EVENTS = list(EVENT_FORMATTERS.keys())

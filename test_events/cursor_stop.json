@@ -1,0 +1,7 @@
+{
+  "hook_event_name": "stop",
+  "status": "completed",
+  "loop_count": 0,
+  "conversation_id": "abc12345-6789-def0-1234-56789abcdef0",
+  "workspace_roots": ["/Users/ankio/Documents/SourceCode/Python/cladue-notify"]
+}
